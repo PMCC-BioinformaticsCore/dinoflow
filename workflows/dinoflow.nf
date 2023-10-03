@@ -52,17 +52,13 @@ include { FASTQC                      } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 
+include { EXTRACT_BARCODE_TXT } from '../modules/local/extract_barcode_txt/main'
+
 
 /*
 HELPER FUNCTIONS
 
 */
-def extract_barcode_csv(path) {
-    def file = new File(path)
-    def rows = file.readLines().tail()*.split(',')
-    Set barcodes = rows*.getAt(9)
-    println 'Multiple ${barcodes}'
-}
 
 def extract_csv(csv_file) {
     // check that the sample sheet is not 1 line or less, because it'll skip all subsequent checks if so.
@@ -96,8 +92,8 @@ def extract_csv(csv_file) {
         // Retrieves number of lanes by grouping together by pool and sample and counting how many entries there are for this combination
         .map{ row ->
             sample_count_all++
-            if (!(row.annotation && row.fastq_1 && row.fastq_2 && row.lane)) {
-                error("Missing field in csv file header. The csv file must have fields named 'pool', 'fastq_1', 'fastq_2' and 'lane'.")
+            if (!(row.anno && row.fastq_1 && row.fastq_2 && row.lane)) {
+                error("Missing field in csv file header. The csv file must have fields named 'pool', 'meta', 'fastq_1', 'fastq_2' and 'lane'.")
             }
             else if (row.pool.contains(" ") || row.sample.contains(" ")) {
                 error("Invalid value in csv file. Values for 'pool' and 'sample' can not contain space.")
@@ -120,6 +116,7 @@ def extract_csv(csv_file) {
 
         // mapping with fastq
         meta.id         = "${row.pool}-${row.lane}".toString()
+        meta.anno = ${row.meta}.toString()
         def fastq_1     = file(row.fastq_1, checkIfExists: true)
         def fastq_2     = file(row.fastq_2, checkIfExists: true)
 
@@ -146,48 +143,52 @@ workflow DINOFLOW {
 
     ch_versions = Channel.empty()
 
+    input = extract_csv(ch_input)
+
+    EXTRACT_BARCODE_TXT( input )
+
     //
     // SUBWORKFLOW: Read in samplesheet, validate and stage input files
     //
-    INPUT_CHECK (
-        ch_input
-    )
-    ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
+    // INPUT_CHECK (
+    //     ch_input
+    // )
+    // ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
     //
     // MODULE: Run FastQC
     //
-    FASTQC (
-        INPUT_CHECK.out.reads
-    )
-    ch_versions = ch_versions.mix(FASTQC.out.versions.first())
+    // FASTQC (
+    //     INPUT_CHECK.out.reads
+    // )
+    // ch_versions = ch_versions.mix(FASTQC.out.versions.first())
 
-    CUSTOM_DUMPSOFTWAREVERSIONS (
-        ch_versions.unique().collectFile(name: 'collated_versions.yml')
-    )
+    // CUSTOM_DUMPSOFTWAREVERSIONS (
+    //     ch_versions.unique().collectFile(name: 'collated_versions.yml')
+    // )
 
     //
     // MODULE: MultiQC
     //
-    workflow_summary    = WorkflowDinoflow.paramsSummaryMultiqc(workflow, summary_params)
-    ch_workflow_summary = Channel.value(workflow_summary)
+    // workflow_summary    = WorkflowDinoflow.paramsSummaryMultiqc(workflow, summary_params)
+    // ch_workflow_summary = Channel.value(workflow_summary)
 
-    methods_description    = WorkflowDinoflow.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description)
-    ch_methods_description = Channel.value(methods_description)
+    // methods_description    = WorkflowDinoflow.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description)
+    // ch_methods_description = Channel.value(methods_description)
 
-    ch_multiqc_files = Channel.empty()
-    ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-    ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
-    ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
+    // ch_multiqc_files = Channel.empty()
+    // ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
+    // ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
+    // ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
+    // ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
 
-    MULTIQC (
-        ch_multiqc_files.collect(),
-        ch_multiqc_config.toList(),
-        ch_multiqc_custom_config.toList(),
-        ch_multiqc_logo.toList()
-    )
-    multiqc_report = MULTIQC.out.report.toList()
+    // MULTIQC (
+    //     ch_multiqc_files.collect(),
+    //     ch_multiqc_config.toList(),
+    //     ch_multiqc_custom_config.toList(),
+    //     ch_multiqc_logo.toList()
+    // )
+    // multiqc_report = MULTIQC.out.report.toList()
 }
 
 /*
