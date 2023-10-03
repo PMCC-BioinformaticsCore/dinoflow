@@ -1,0 +1,4 @@
+prefix: dinoflow
+skip:
+- igenomes
+- nf_core_configs

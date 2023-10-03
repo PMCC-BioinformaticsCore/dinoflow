@@ -1,0 +1,54 @@
+{
+    "name": "dinoflow/dinoflow",
+    "homePage": "https://github.com/dinoflow/dinoflow",
+    "repos": {
+        "https://github.com/nf-core/modules.git": {
+            "modules": {
+                "nf-core": {
+                    "custom/dumpsoftwareversions": {
+                        "branch": "master",
+                        "git_sha": "76cc4938c1f6ea5c7d83fed1eeffc146787f9543",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "fastqc": {
+                        "branch": "master",
+                        "git_sha": "c8e35eb2055c099720a75538d1b8adb3fb5a464c",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "gunzip": {
+                        "branch": "master",
+                        "git_sha": "e06548bfa36ee31869b81041879dd6b3a83b1d57",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "multiqc": {
+                        "branch": "master",
+                        "git_sha": "f2d63bd5b68925f98f572eed70993d205cc694b7",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "star/align": {
+                        "branch": "master",
+                        "git_sha": "cc08a888069f67cab8120259bddab8032d4c0fe3",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "star/genomegenerate": {
+                        "branch": "master",
+                        "git_sha": "cc08a888069f67cab8120259bddab8032d4c0fe3",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
