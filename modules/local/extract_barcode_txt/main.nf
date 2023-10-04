@@ -14,6 +14,6 @@ process EXTRACT_BARCODE_TXT {
 
     script:
     """
-    awk -F "," '{print $NF}' ${anno} | tr -d '"' > barcode.txt
+    awk -F "," '{print \$NF}' ${anno} | tr -d '"' > barcode.txt
     """
 }
