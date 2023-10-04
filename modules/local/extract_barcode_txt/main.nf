@@ -12,8 +12,8 @@ process EXTRACT_BARCODE_TXT {
     output:
     path 'barcode.txt', emit: barcode
 
-    script:
+    shell:
     """
-    awk -F "," '{print \$NF}' ${anno} | tr -d '"' > barcode.txt
+    awk -F "," '{print $NF}' !{anno} | tr -d '"' > barcode.txt
     """
 }
