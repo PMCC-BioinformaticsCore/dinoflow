@@ -153,21 +153,11 @@ workflow DINOFLOW {
     reads_barcode = input.combine(EXTRACT_BARCODE_TXT.out.barcode)
 	.map { meta, reads, barcode -> [ meta + [whitelist: barcode, barcode_len: params.starsolo_barcode_len, umi_len: params.starsolo_umi_len, umi_start: params.starsolo_umi_start, cb_len: params.starsolo_cb_len, cb_start: params.starsolo_cb_start], reads ] }
 
-//reads_barcode.view()
     drop_lane = reads_barcode.map {
 	meta, reads -> [groupKey(meta - meta.subMap("lane","num_lanes", "size"), (meta.num_lanes?:1)*(meta.size?:1)), reads]
 	}.groupTuple()
 	
-    drop_lane.view()
-
-	star_input= drop_lane.map{meta,reads -> [meta, params.starsolo_algorithm, reads.flatten()]}
-
-
-    STARSOLO( star_input, ch_star_index )
-   
-    SEURAT ( STARSOLO.out.counts.map { meta, dir -> [meta - meta.subMap("anno"), meta.anno, dir]} ) 
-
-    SEURAT_TO_EDGER ( SEURAT.out.rds, SEURAT.out.annotation)
+    star_input= drop_lane.map{meta,reads -> [meta, params.starsolo_algorithm, reads.flatten()]}
 
     //
     // SUBWORKFLOW: Read in samplesheet, validate and stage input files
@@ -180,37 +170,43 @@ workflow DINOFLOW {
     //
     // MODULE: Run FastQC
     //
-    // FASTQC (
-    //     INPUT_CHECK.out.reads
-    // )
-    // ch_versions = ch_versions.mix(FASTQC.out.versions.first())
+    FASTQC (
+         input
+    )
+    ch_versions = ch_versions.mix(FASTQC.out.versions.first())
 
-    // CUSTOM_DUMPSOFTWAREVERSIONS (
-    //     ch_versions.unique().collectFile(name: 'collated_versions.yml')
-    // )
+    CUSTOM_DUMPSOFTWAREVERSIONS (
+         ch_versions.unique().collectFile(name: 'collated_versions.yml')
+    )
+
+    STARSOLO( star_input, ch_star_index )
+
+    SEURAT ( STARSOLO.out.counts.map { meta, dir -> [meta - meta.subMap("anno"), meta.anno, dir]} )
+
+    SEURAT_TO_EDGER ( SEURAT.out.rds, SEURAT.out.annotation)
 
     //
     // MODULE: MultiQC
     //
-    // workflow_summary    = WorkflowDinoflow.paramsSummaryMultiqc(workflow, summary_params)
-    // ch_workflow_summary = Channel.value(workflow_summary)
+    workflow_summary    = WorkflowDinoflow.paramsSummaryMultiqc(workflow, summary_params)
+    ch_workflow_summary = Channel.value(workflow_summary)
 
-    // methods_description    = WorkflowDinoflow.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description)
-    // ch_methods_description = Channel.value(methods_description)
+    methods_description    = WorkflowDinoflow.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description)
+    ch_methods_description = Channel.value(methods_description)
 
-    // ch_multiqc_files = Channel.empty()
-    // ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-    // ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
-    // ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    // ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
+    ch_multiqc_files = Channel.empty()
+    ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
+    ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
+    ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
+    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
 
-    // MULTIQC (
-    //     ch_multiqc_files.collect(),
-    //     ch_multiqc_config.toList(),
-    //     ch_multiqc_custom_config.toList(),
-    //     ch_multiqc_logo.toList()
-    // )
-    // multiqc_report = MULTIQC.out.report.toList()
+    MULTIQC (
+         ch_multiqc_files.collect(),
+         ch_multiqc_config.toList(),
+         ch_multiqc_custom_config.toList(),
+         ch_multiqc_logo.toList()
+    )
+    multiqc_report = MULTIQC.out.report.toList()
 }
 
 /*

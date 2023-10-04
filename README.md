@@ -21,9 +21,11 @@
 <!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->
 
 1. Read Annotation File
-2. Run Star-Solo
-3. Run Seurat
-4. Run Edge-R
+2. Run FASTQC
+3. Run Star-Solo
+4. Run Seurat
+5. Run Edge-R
+6. RUN MultiQC
 
 ## Usage
 
