@@ -1,4 +1,4 @@
-process MTX_TO_SEURAT {
+process SEURAT_TO_EDGER {
     //tag "$meta.id"
     //label 'process_medium'
 
@@ -15,12 +15,12 @@ process MTX_TO_SEURAT {
     
     path "*BCV_plot.png"
     path "*CSV_out/*_table.csv"
-    path "*smearPlots_out.zip"
+    path "*smearPlots_out.gz"
     
     """
     Rscript seurat_script.R \\
         ${seurat_obj_file_path} \\
         ${mod_annotation_file_path} 
-    gzip ${output_plot_smear_dir}
+    gzip smearPlots_out/
     """
 }
