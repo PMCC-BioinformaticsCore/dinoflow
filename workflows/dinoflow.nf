@@ -11,8 +11,8 @@ WorkflowDinoflow.initialise(params, log)
 
 // TODO nf-core: Add all file path parameters for the pipeline to the list below
 // Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.multiqc_config, params.fasta ]
-for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+//def checkPathParamList = [ params.input, params.multiqc_config, params.fasta ]
+//for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
 // Check mandatory parameters
 if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
@@ -95,10 +95,10 @@ def extract_csv(csv_file) {
             if (!(row.anno && row.fastq_1 && row.fastq_2 && row.lane)) {
                 error("Missing field in csv file header. The csv file must have fields named 'pool', 'meta', 'fastq_1', 'fastq_2' and 'lane'.")
             }
-            else if (row.pool.contains(" ") || row.sample.contains(" ")) {
+            else if (row.pool.contains(" ")) {
                 error("Invalid value in csv file. Values for 'pool' and 'sample' can not contain space.")
             }
-            [ [ row.pool.toString(), row.sample.toString() ], row ]
+            [ [ row.pool.toString() ], row ]
         }.groupTuple()
         .map{ meta, rows ->
             size = rows.size()
@@ -116,7 +116,7 @@ def extract_csv(csv_file) {
 
         // mapping with fastq
         meta.id         = "${row.pool}-${row.lane}".toString()
-        meta.anno = ${row.meta}.toString()
+        meta.anno = file(row.anno, checkIfExists: true)
         def fastq_1     = file(row.fastq_1, checkIfExists: true)
         def fastq_2     = file(row.fastq_2, checkIfExists: true)
 
@@ -144,9 +144,16 @@ workflow DINOFLOW {
     ch_versions = Channel.empty()
 
     input = extract_csv(ch_input)
+    input.view()
 
-    EXTRACT_BARCODE_TXT( input )
+    EXTRACT_BARCODE_TXT( input.map { meta, reads -> meta.anno})
 
+    //EXTRACT_BARCODE_TXT.out.barcode.view()
+
+    reads_barcode = input.combine(EXTRACT_BARCODE_TXT.out.barcode)
+	.map { meta, reads, barcode -> [ meta + [whitelist: barcode], reads] }
+
+    reads_barcode.view()
     //
     // SUBWORKFLOW: Read in samplesheet, validate and stage input files
     //

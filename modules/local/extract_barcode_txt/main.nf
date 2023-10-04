@@ -7,13 +7,13 @@ process EXTRACT_BARCODE_TXT {
         'biocontainers/ubuntu:20.04' }"
 
     input:
-    tuple val(meta), path(reads)
+    path(anno)
 
     output:
     path 'barcode.txt', emit: barcode
 
     script:
     """
-    cut -f\$',' -d 9 ${meta.annotation} | tail -n+2 > barcode.txt
+    cut -d\$',' -f 9 ${anno} | tail -n+2 > barcode.txt
     """
 }
