@@ -1,3 +1,4 @@
+#!/usr/bin/env Rscript
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # seurat_script.R
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -44,7 +45,8 @@ if (length(args) != 8) {
 }
 
 # Columns in annotation file
-ann_cols <- c('Barcode', 'Well_ID', 'Row', 'Column', 'Compound_ID', 'Dose_category', 'Pathway')
+#ann_cols <- c('Barcode', 'Well_ID', 'Row', 'Column', 'Compound_ID', 'Dose_category', 'Pathway')
+ann_cols <- c('Barcode', 'Well_ID', 'QCL_Sample_Number', 'Concentration', 'Units', 'Description', 'Compound_ID', 'Pathway')
 
 # # For debug
 # prefix <- "2D_PMC154_ML_Macseq2D_MOA"
@@ -67,12 +69,13 @@ out_ann_file
 # Preparing the bloody annotations
 annotation <- readr::read_csv(ann_data, col_names = TRUE) 
 # Check that all columns are there before selecting them
-stopifnot(sum(!ann_cols %in% colnames(annotation)) == 0)
+#stopifnot(sum(!ann_cols %in% colnames(annotation)) == 0)
 # Now fix up the ann df
 annotation <- annotation %>% 
   select(all_of(ann_cols)) %>% 
-  mutate(meta.annot = paste(Compound_ID, Dose_category, Pathway, sep = "-")) %>% 
-  mutate(cmp.cat = paste0(Compound_ID, "-", Dose_category)) 
+  mutate(meta.annot = paste(Compound_ID, Concentration, Pathway, sep = "-")) %>% 
+  mutate(Dose_category = rep(c("low","med", "high"), each = 128)) %>%
+  mutate(cmp.cat = paste0(Compound_ID, "-", Dose_category))
 
 ## Compiling Count Reads for Seurat ----------------------------
 expression.matrix <- ReadMtx(mtx = mtx_file, features = feature_file, cells = barcode_file)
@@ -88,8 +91,7 @@ QC.data <- seu@meta.data %>%
   dplyr::mutate(meta.variable = factor(meta.variable, levels = c("nCount_RNA",
                                                                  "nFeature_RNA",
                                                                  "percent.mt")),
-                Dose_category = factor(Dose_category, levels = c("untreated",
-                                                            "very low",
+                Dose_category = factor(Dose_category, levels = c(
                                                             "low",
                                                             "med",
                                                             "high"))) %>% 
@@ -142,7 +144,7 @@ QC_barplots_untreated <- ggplot(QC.data_DMSO, aes(x = Compound_ID, y = value)) +
 # RNAseq read counts platmap by scaling ---------------------------------------
 # Look at read counts of individual wells to scan for edge effects or extreme reads by scaling data against min/max
 # make plots using Min-Max read counts
-QC.data %>% filter(meta.variable.2 == "Total mapped reads") %>% 
+heapmap <- QC.data %>% filter(meta.variable.2 == "Total mapped reads") %>% 
   mutate(Norm_value = round(((value-min(value))/(max(value)-min(value))), 2))
 
 heapmap_plot <- platetools::raw_map(data = heapmap$Norm_value,

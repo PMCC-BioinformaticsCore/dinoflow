@@ -54,7 +54,8 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoft
 
 include { EXTRACT_BARCODE_TXT } from '../modules/local/extract_barcode_txt/main'
 include { STARSOLO } from '../modules/nf-core/star/starsolo/main'
-
+include { SEURAT   } from '../modules/local/seurat_script'
+include { SEURAT_TO_EDGER } from '../modules/local/seurat_to_edgeR'
 
 /*
 HELPER FUNCTIONS
@@ -116,7 +117,8 @@ def extract_csv(csv_file) {
         if (row.pool) meta.pool = row.pool.toString()
 
         // mapping with fastq
-        meta.id         = "${row.pool}-${row.lane}".toString()
+        meta.id         = "${row.pool}-${row.rep}".toString()
+	meta.lane = row.lane
         meta.anno = file(row.anno, checkIfExists: true)
         def fastq_1     = file(row.fastq_1, checkIfExists: true)
         def fastq_2     = file(row.fastq_2, checkIfExists: true)
@@ -148,15 +150,25 @@ workflow DINOFLOW {
 
     EXTRACT_BARCODE_TXT( input.map { meta, reads -> meta.anno})
 
-    //EXTRACT_BARCODE_TXT.out.barcode.view()
-
     reads_barcode = input.combine(EXTRACT_BARCODE_TXT.out.barcode)
-	.map { meta, reads, barcode -> [ meta + [whitelist: barcode, barcode_len: params.starsolo_barcode_len, umi_len: params.starsolo_umi_len, umi_start: params.starsolo_umi_start, cb_len: params.starsolo_cb_len, cb_start: params.starsolo_cb_start], params.starsolo_algorithm, reads ] }
+	.map { meta, reads, barcode -> [ meta + [whitelist: barcode, barcode_len: params.starsolo_barcode_len, umi_len: params.starsolo_umi_len, umi_start: params.starsolo_umi_start, cb_len: params.starsolo_cb_len, cb_start: params.starsolo_cb_start], reads ] }
 
-    reads_barcode.view()
-	ch_star_index.view()
-    STARSOLO( reads_barcode, ch_star_index )
-    
+//reads_barcode.view()
+    drop_lane = reads_barcode.map {
+	meta, reads -> [groupKey(meta - meta.subMap("lane","num_lanes", "size"), (meta.num_lanes?:1)*(meta.size?:1)), reads]
+	}.groupTuple()
+	
+    drop_lane.view()
+
+	star_input= drop_lane.map{meta,reads -> [meta, params.starsolo_algorithm, reads.flatten()]}
+
+
+    STARSOLO( star_input, ch_star_index )
+   
+    SEURAT ( STARSOLO.out.counts.map { meta, dir -> [meta - meta.subMap("anno"), meta.anno, dir]} ) 
+
+    SEURAT_TO_EDGER ( SEURAT.out.rds, SEURAT.out.annotation)
+
     //
     // SUBWORKFLOW: Read in samplesheet, validate and stage input files
     //
