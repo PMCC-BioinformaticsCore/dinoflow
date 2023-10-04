@@ -228,19 +228,19 @@
             "default": null
         },
         "starsolo_barcode_len": {
-            "type": "string",
+            "type": "integer",
             "default": null
         },
         "starsolo_umi_start": {
-            "type": "string",
+            "type": "integer",
             "default": null
         },
         "starsolo_cb_len": {
-            "type": "string",
+            "type": "integer",
             "default": null
         },
         "starsolo_cb_start": {
-            "type": "string",
+            "type": "integer",
             "default": null
         }
     }
