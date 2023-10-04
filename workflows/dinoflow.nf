@@ -16,7 +16,7 @@ WorkflowDinoflow.initialise(params, log)
 
 // Check mandatory parameters
 if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
-
+ch_star_index = Channel.fromPath(params.star_index).map{ fn -> [ [id: fn.baseName], fn ]}
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     CONFIG FILES
@@ -53,7 +53,7 @@ include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 
 include { EXTRACT_BARCODE_TXT } from '../modules/local/extract_barcode_txt/main'
-include { STAR_STARSOLO } from '../modules/nf-core/star/starsolo/main'
+include { STARSOLO } from '../modules/nf-core/star/starsolo/main'
 
 
 /*
@@ -151,10 +151,11 @@ workflow DINOFLOW {
     //EXTRACT_BARCODE_TXT.out.barcode.view()
 
     reads_barcode = input.combine(EXTRACT_BARCODE_TXT.out.barcode)
-	.map { meta, reads, barcode -> [ meta + [whitelist: barcode, barcode: ${params.barcode_len}, umi_len: params.umi_len, umi_start: params.umi_start, cb_len: params.cb_len, cb_start: params.cb_start], params.starsolo_algorithm, reads ] }
+	.map { meta, reads, barcode -> [ meta + [whitelist: barcode, barcode_len: params.starsolo_barcode_len, umi_len: params.starsolo_umi_len, umi_start: params.starsolo_umi_start, cb_len: params.starsolo_cb_len, cb_start: params.starsolo_cb_start], params.starsolo_algorithm, reads ] }
 
     reads_barcode.view()
-    // STAR_STARSOLO( reads_barcode )
+	ch_star_index.view()
+    STARSOLO( reads_barcode, ch_star_index )
     
     //
     // SUBWORKFLOW: Read in samplesheet, validate and stage input files
