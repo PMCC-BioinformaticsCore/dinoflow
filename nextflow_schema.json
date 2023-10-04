@@ -45,21 +45,6 @@
                 }
             }
         },
-        "reference_genome_options": {
-            "title": "Reference genome options",
-            "type": "object",
-            "fa_icon": "fas fa-dna",
-            "description": "Reference genome related files and options required for the workflow.",
-            "properties": {}
-        },
-        "institutional_config_options": {
-            "title": "Institutional config options",
-            "type": "object",
-            "fa_icon": "fas fa-university",
-            "description": "Parameters used to describe centralised config profiles. These should not be edited.",
-            "help_text": "The centralised nf-core configuration profiles use a handful of pipeline parameters to describe themselves. This information is then printed to the Nextflow log when you run a pipeline. You should not need to change these values when you run a pipeline.",
-            "properties": {}
-        },
         "max_job_request_options": {
             "title": "Max job request options",
             "type": "object",
@@ -211,16 +196,52 @@
             "$ref": "#/definitions/input_output_options"
         },
         {
-            "$ref": "#/definitions/reference_genome_options"
-        },
-        {
-            "$ref": "#/definitions/institutional_config_options"
-        },
-        {
             "$ref": "#/definitions/max_job_request_options"
         },
         {
             "$ref": "#/definitions/generic_options"
         }
-    ]
+    ],
+    "properties": {
+        "schema_ignore_params": {
+            "type": "string",
+            "default": "genomes"
+        },
+        "fasta": {
+            "type": "string",
+            "default": null
+        },
+        "star_index": {
+            "type": "string",
+            "default": null
+        },
+        "gtf": {
+            "type": "string",
+            "default": null
+        },
+        "star_feature": {
+            "type": "string",
+            "default": null
+        },
+        "starsolo_algorithm": {
+            "type": "string",
+            "default": null
+        },
+        "starsolo_barcode_len": {
+            "type": "string",
+            "default": null
+        },
+        "starsolo_umi_start": {
+            "type": "string",
+            "default": null
+        },
+        "starsolo_cb_len": {
+            "type": "string",
+            "default": null
+        },
+        "starsolo_cb_start": {
+            "type": "string",
+            "default": null
+        }
+    }
 }
