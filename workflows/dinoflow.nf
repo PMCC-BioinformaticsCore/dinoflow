@@ -53,6 +53,7 @@ include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 
 include { EXTRACT_BARCODE_TXT } from '../modules/local/extract_barcode_txt/main'
+include { STAR_STARSOLO } from '../modules/nf-core/star/starsolo/main'
 
 
 /*
@@ -151,9 +152,11 @@ workflow DINOFLOW {
     //EXTRACT_BARCODE_TXT.out.barcode.view()
 
     reads_barcode = input.combine(EXTRACT_BARCODE_TXT.out.barcode)
-	.map { meta, reads, barcode -> [ meta + [whitelist: barcode], reads] }
+	.map { meta, reads, barcode -> [ meta + [whitelist: barcode, barcode: ${params.barcode_len}, umi_len: ${params.umi_len}, umi_start: ${params.umi_start}, cb_len: ${params.cb_len}, cb_start: ${params.cb_start}], reads ] }
 
-    reads_barcode.view()
+
+    STAR_STARSOLO( reads_barcode )
+    
     //
     // SUBWORKFLOW: Read in samplesheet, validate and stage input files
     //
