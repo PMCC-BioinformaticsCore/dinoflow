@@ -8,7 +8,7 @@
 
 ## Introduction
 
-**dinoflow/dinoflow** is a bioinformatics pipeline that ...
+**dinoflow/dinoflow** is a bioinformatics pipeline that processes MAC-seq data. 
 
 <!-- TODO nf-core:
    Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
@@ -20,8 +20,10 @@
      workflows use the "tube map" design for that. See https://nf-co.re/docs/contributing/design_guidelines#examples for examples.   -->
 <!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->
 
-1. Read QC ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
-2. Present QC for raw reads ([`MultiQC`](http://multiqc.info/))
+1. Read Annotation File
+2. Run Star-Solo
+3. Run Seurat
+4. Run Edge-R
 
 ## Usage
 
