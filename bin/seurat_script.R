@@ -188,8 +188,8 @@ QC.Scatter.filtered <- tibble(seu@meta.data) %>%
 write.csv(QC.data_DMSO, paste0(output_folder, "/untreated_QC.csv"), row.names = FALSE)
 ggsave(QC_barplots_compounds, filename = paste0(output_folder,"/QC_pertreatmentdosage_compound_barplots.png"), width = 10, height = 5, units = "in", dpi = 600)
 ggsave(QC_barplots_untreated, filename = paste0(output_folder,"/QC_pertreatmentdosage_untreated_barplots.png"), width = 10, height = 5, units = "in", dpi = 600)
-gsave(heapmap_plot, filename = paste0(output_folder, "/QC_plate_heatmap.png"), width = 10 , height = 5, units = "in", dpi = 600)
-gsave(QC.Scatter.filtered, filename = paste0(output_folder, "/QC_scatterplot.png"), width = 10 , height = 5, units = "in", dpi = 600)
+ggsave(heapmap_plot, filename = paste0(output_folder, "/QC_plate_heatmap.png"), width = 10 , height = 5, units = "in", dpi = 600)
+ggsave(QC.Scatter.filtered, filename = paste0(output_folder, "/QC_scatterplot.png"), width = 10 , height = 5, units = "in", dpi = 600)
 # Save modified annotation object for edgeR
 write.csv(x = annotation, file = out_ann_file)
 # Save seurat object
