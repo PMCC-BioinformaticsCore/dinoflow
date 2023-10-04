@@ -145,17 +145,16 @@ workflow DINOFLOW {
     ch_versions = Channel.empty()
 
     input = extract_csv(ch_input)
-    input.view()
 
     EXTRACT_BARCODE_TXT( input.map { meta, reads -> meta.anno})
 
     //EXTRACT_BARCODE_TXT.out.barcode.view()
 
     reads_barcode = input.combine(EXTRACT_BARCODE_TXT.out.barcode)
-	.map { meta, reads, barcode -> [ meta + [whitelist: barcode, barcode: ${params.barcode_len}, umi_len: ${params.umi_len}, umi_start: ${params.umi_start}, cb_len: ${params.cb_len}, cb_start: ${params.cb_start}], reads ] }
+	.map { meta, reads, barcode -> [ meta + [whitelist: barcode, barcode: ${params.barcode_len}, umi_len: params.umi_len, umi_start: params.umi_start, cb_len: params.cb_len, cb_start: params.cb_start], params.starsolo_algorithm, reads ] }
 
-
-    STAR_STARSOLO( reads_barcode )
+    reads_barcode.view()
+    // STAR_STARSOLO( reads_barcode )
     
     //
     // SUBWORKFLOW: Read in samplesheet, validate and stage input files
