@@ -1,0 +1,3 @@
+pool,lane,rep,anno,fastq_1,fastq_2
+2d_MOA,1,1,/data/Sequencing/2D_monolayer/MOA/PMC154_MACseq_MOA_annotation.csv,/data/Sequencing/2D_monolayer/MOA/Rep2/raw/PMC154-2D-Drug-20230814_S1_L001_R1_001.fastq.gz,/data/Sequencing/2D_monolayer/MOA/Rep2/raw/PMC154-2D-Drug-20230814_S1_L001_R2_001.fastq.gz
+2d_MOA,2,1,/data/Sequencing/2D_monolayer/MOA/PMC154_MACseq_MOA_annotation.csv,/data/Sequencing/2D_monolayer/MOA/Rep2/raw/PMC154-2D-Drug-20230814_S1_L002_R1_001.fastq.gz,/data/Sequencing/2D_monolayer/MOA/Rep2/raw/PMC154-2D-Drug-20230814_S1_L002_R2_001.fastq.gz
