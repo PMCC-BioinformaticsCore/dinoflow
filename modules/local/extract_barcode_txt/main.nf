@@ -1,10 +1,7 @@
 process EXTRACT_BARCODE_TXT {
     label 'process_single'
 
-    conda 'ubuntu:20.04'
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/ubuntu:20.04' :
-        'biocontainers/ubuntu:20.04' }"
+    container "rlupat/r-dinoflow:0.1.1"
 
     input:
     path(anno)
@@ -14,6 +11,6 @@ process EXTRACT_BARCODE_TXT {
 
     shell:
     """ 
-    rev !{anno} | awk -F "," '{print \$1}' | tr -d '"' | tail -n+2 > barcode.txt
+    Rscript -e 'data = read.csv("$anno",sep=","); cat(data[,"Barcode"])' > barcode.txt
     """
 }
