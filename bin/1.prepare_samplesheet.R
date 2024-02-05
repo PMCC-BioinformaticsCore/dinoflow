@@ -8,35 +8,37 @@ platform<-"NovaSeq"
 run_id<-"230712_A01524_0152_AH5HWKDRX3"
 researcher<-"Lizzy Pijpers"
 
-metadata_dir<-paste0("/researchers/nenad.bartonicek/projects/mac-seq/metadata/",project_name)
 samplesheet_dir<-paste0("/researchers/nenad.bartonicek/projects/mac-seq/sample_sheets/",project_name)
-
+metadata_dir<-paste0("/researchers/nenad.bartonicek/projects/mac-seq/metadata/",project_name)
 metadata_file<-paste0(metadata_dir,"/",project_name,".csv")
-metadata<-read.csv(metadata_file)
-
-#for each plate create new sample sheet
-pools<-unique(metadata$Plate_ID)
 
 dfL<-list()
-for(pool in pools){
-  sample_name<-paste0("Sample_",pool)
-  files<-list.files(
-    paste0(
-      "/pipeline/Archives/",
-      platform,
-      "/",run_id,
-      "/ProjectFolders",
-      "/Project_",gsub(" ","-",researcher),
-      "/",sample_name
-    ),full.names=T
+
+in_dir<-paste0(
+  "/pipeline/Archives/",
+  platform,
+  "/",run_id,
+  "/ProjectFolders",
+  "/Project_",gsub(" ","-",researcher),
+  "/"
+)
+
+pool_dirs<-list.files(
+  in_dir,full.names=T
+)
+
+for(pool_dir in pool_dirs){
+  pool_name<-gsub("Sample_","",basename(pool_dir))
+  pool_files<-list.files(
+    pool_dir,full.names=T
   )
-  nLanes<-sum(grepl("R1",basename(files)))
+  nLanes<-sum(grepl("R1",basename(pool_files)))
   tempL<-list()
   for(lane in 1:nLanes){
-    R1_file<-files[grepl("R1",basename(files))][lane]
-    R2_file<-files[grepl("R2",basename(files))][lane]
+    R1_file<-pool_files[grepl("R1",basename(pool_files))][lane]
+    R2_file<-pool_files[grepl("R2",basename(pool_files))][lane]
     tempL[[lane]]<-data.frame(
-      pool=pool,
+      pool=pool_name,
       lane=lane,
       rep=1,
       anno=metadata_file,
@@ -45,7 +47,7 @@ for(pool in pools){
     )
   }
   df<-do.call("rbind",tempL)
-  out_samplesheet_csv<-paste0(samplesheet_dir,"/",pool,".csv")
+  out_samplesheet_csv<-paste0(samplesheet_dir,"/",pool_name,".csv")
   write.csv(df,out_samplesheet_csv,row.names=F,quote=F)
 }
 
