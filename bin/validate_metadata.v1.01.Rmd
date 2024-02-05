@@ -1,0 +1,372 @@
+---
+title: "Metadata report"
+author: ''
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen=1, digits=2)
+```
+
+```{r projectcode, include = FALSE, echo=FALSE}
+
+#TO-DO list 
+
+#starting_information
+project_code<-"project_ID"
+
+#home directory
+metadata_dir<-"metadata"
+file_name<-paste0(project_code,"_metadata.csv")
+metadata_filename<-paste(metadata_dir,file_name,sep="/")
+
+```
+
+```{r inputs, include = FALSE, echo=FALSE}
+require(tidyverse)
+require(ggplot2)
+require(knitr)
+require(dplyr)
+require(readxl)
+require(DT)
+require(gtools)
+require(httpuv)
+require(purrr)
+require(stringr)
+#devtools::install_github("kupietz/kableExtra")
+library(kableExtra)
+library(vtable)
+```
+
+# Project code: `r project_code`
+
+```{r preparedata, include=FALSE,echo=FALSE,message=FALSE}
+
+#test for format of the project code
+if(str_count(project_code,"_")!=1){
+  stop("Project code is lacking an underscore.")
+}
+
+#expected columns
+metadata_columns<-c(
+"Id",
+"Plate", 
+"Well_ID", 
+"Time", 
+"Row", 
+"Col", 
+"Barcode", 
+"Cell", 
+"Treatment_Metadata", 
+"Control") 
+
+#define project code 
+#code_number<-gsub(".*_(\\d{4,5})CR.*","\\1",project_code)
+#if(!grepl("^\\w\\w_\\d{4,5}CR\\d",project_code)){
+#  stop("Project code is not in the right format")
+#}
+
+##### Report format
+metadataQC<-list()
+metadataQC[[paste0("0.filename.")]]<-metadata_filename
+metadataQC[[paste0("1.01.Metadata_location: Folder ",metadata_dir," exists at the right location.")]]<-"TBD"
+metadataQC[[paste0("1.02.Metadata_location: Folder ",metadata_dir," contains a single metadata file.")]]<-"TBD"
+metadataQC[[paste0("1.03.Metadata_location: Metadata is readable.")]]<-"TBD"
+
+metadataQC[["2.01.Columns: All metadata has expected columns."]]<-"TBD"
+metadataQC[["2.02.Columns: All 'Plate' values are present (no empty rows)."]]<-"TBD"
+metadataQC[["2.03.Columns: All 'Well_ID' values are present (no empty rows)."]]<-"TBD"
+metadataQC[["2.04.Columns: All 'Barcode' values are present (no empty rows)."]]<-"TBD"
+metadataQC[["2.05.Columns: All 'Cell' values are present (no empty rows)."]]<-"TBD"
+metadataQC[["2.06.Columns: All 'Treatment_Metadata' values are present (no empty rows)."]]<-"TBD"
+metadataQC[["2.07.Columns: All 'Replicate' values are present (no empty rows)."]]<-"TBD"
+
+metadataQC[["3.01.Special_characters: All values are without empty spaces."]]<-"TBD"
+metadataQC[["3.02.Special_characters: All values are without special characters"]]<-"TBD"
+metadataQC[["3.03.Special_characters: All values are without commas"]]<-"TBD"
+
+metadataQC[["4.01.Uniqueness: All 'Well_ID' values are unique per plate."]]<-"TBD"
+metadataQC[["4.02.Uniqueness: All 'Barcode' values are unique per plate."]]<-"TBD"
+metadataQC[["4.03.Uniqueness: All Treatment_Metadata have replicates."]]<-"TBD"
+metadataQC[["4.04.Uniqueness: All combinations of Time, Cell, Treatment and Control have replicates."]]<-"TBD"
+
+metadataQC[["5.01.Fastq_files: All fastq files exist and are in the correct location."]]<-"TBD"
+
+###### Plotting of the output
+plotReport<-function(qc_report){
+  #qc_report list of QC tests 
+  #client_md and internal_md: client and internal metadata
+  metadata_filename<-metadataQC[[1]]
+  if(nchar(metadata_filename)==0){
+    metadata_filename<-"No metabarcoding files found in the expected folder, check directory structure."
+  }
+  cat('\n')
+  cat('### 1. Format checker\n')
+  cat('\n')
+  metadataQC_df<-do.call("rbind",metadataQC)
+  metadataQC_df<-t(metadataQC_df)
+
+  #the first value is the filename so remove it for the rest of the analysis
+  myData<-metadataQC[-1] %>% 
+    as_tibble() %>%
+    t() %>% 
+    as.data.frame() %>%
+    rownames_to_column(var="Condition") %>%
+    dplyr::rename(Result=V1) %>% 
+    arrange(Condition)
+  myData<-myData[mixedorder(myData$Condition),]  
+  table_color<-ifelse(myData$Result == "No", "lightpink", "lightgreen")
+  table_color[myData$Result=="False"]<-"orange"
+  table_color[myData$Result=="TBD"]<-"gray"
+  table<-kbl(myData) %>% 
+    kable_styling(position = "left",bootstrap_options = "striped")  %>%
+     kableExtra::column_spec(1, color = "black", background = table_color) %>%
+  print(table)
+
+}
+```
+
+```{r metadatadirectory, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+
+##### right directory structure
+
+#report on success/fail      
+if(file.exists(metadata_dir)){
+  metadataQC[[paste0("1.01.Metadata_location: Folder ",metadata_dir," exists at the right location.")]]<-"Yes"
+} else {
+  metadataQC[[paste0("1.01.Metadata_location: Folder ",metadata_dir," exists at the right location.")]]<-"No"
+}
+
+```
+
+```{r metadatafile, results='asis', include=TRUE,echo=FALSE,message=TRUE}
+
+##### right metadata file exists
+
+#find the right file
+metadata_files<-list.files(metadata_dir,full.names=T)
+metadata_file<-metadata_files[grepl("_metadata.csv",metadata_files)]
+
+if(length(metadata_file)==0 | length(metadata_file)>1){
+  metadataQC[[paste0("1.02.Metadata_location: Folder ",metadata_dir," contains a single metadata file.")]]<-"No"
+  plotReport(metadataQC);
+  knit_exit();
+  stop("No metadata files found")
+} else {
+  metadataQC[[paste0("1.02.Metadata_location: Folder ",metadata_dir," contains a single metadata file.")]]<-"Yes"
+}
+
+```
+
+
+```{r fileformat, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+
+##### metadata file can be read
+
+tryCatch({metadata<-read.csv(metadata_file,header=T);
+   metadataQC[[paste0("1.03.Metadata_location: Metadata is readable.")]]<-"Yes"},
+  error=function(err){
+    metadataQC[[paste0("1.03.Metadata_location: Metadata is readable.")]]<-"No"
+    plotReport(metadataQC);
+    knit_exit()
+  }
+)
+```
+
+```{r projectmetadatacolumns, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+
+########## all metadata columns there
+ 
+if(all(colnames(metadata) %in% metadata_columns)){
+  metadataQC[["2.01.Columns: All metadata has expected columns."]]<-"Yes"
+} else {
+  metadataQC[["2.01.Columns: All metadata has expected columns."]]<-"False"
+  cat(paste0("Missing column: " ,metadata_columns[!metadata_columns %in% colnames(metadata)]," in sample metadata.\n\n"))
+  cat("\n")
+}
+```
+
+```{r projectplate, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+if (!anyNA(metadata$"Plate")) {
+  metadataQC[["2.02.Columns: All 'Plate' values are present (no empty rows)."]]<-"Yes"
+} else {
+  metadataQC[["2.02.Columns: All 'Plate' values are present (no empty rows)."]]<-"False"
+}
+```
+
+```{r projectwellid, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+if (!anyNA(metadata$"Well_ID")) {
+  metadataQC[["2.03.Columns: All 'Well_ID' values are present (no empty rows)."]]<-"Yes"
+} else {
+  metadataQC[["2.03.Columns: All 'Well_ID' values are present (no empty rows)."]]<-"False"
+}
+```
+
+```{r projectbarcode, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+if (!anyNA(metadata$"Barcode")) {
+  metadataQC[["2.04.Columns: All 'Barcode' values are present (no empty rows)."]]<-"Yes"
+} else {
+  metadataQC[["2.04.Columns: All 'Barcode' values are present (no empty rows)."]]<-"False"
+}
+```
+
+```{r projectcell, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+if (!anyNA(metadata$"Cell")) {
+  metadataQC[["2.05.Columns: All 'Cell' values are present (no empty rows)."]]<-"Yes"
+} else {
+  metadataQC[["2.05.Columns: All 'Cell' values are present (no empty rows)."]]<-"False"
+}
+```
+
+```{r projecttreatmentmetadata, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+if (!anyNA(metadata$"Treatment_Metadata")) {
+  metadataQC[["2.06.Columns: All 'Treatment_Metadata' values are present (no empty rows)."]]<-"Yes"
+} else {
+  metadataQC[["2.06.Columns: All 'Treatment_Metadata' values are present (no empty rows)."]]<-"False"
+}
+```
+
+```{r projectreplicate, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+if (!anyNA(metadata$"Replicate")) {
+  metadataQC[["2.07.Columns: All 'Replicate' values are present (no empty rows)."]]<-"Yes"
+} else {
+  metadataQC[["2.07.Columns: All 'Replicate' values are present (no empty rows)."]]<-"False"
+}
+```
+
+
+
+```{r emptyspaces, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+
+empty_spaces <- sapply(metadata, function(column) str_detect(column, "[:space:]")) 
+
+if(sum(empty_spaces)==0){
+  metadataQC[["3.01.Special_characters: All values are without empty spaces."]]<-"Yes"
+} else {
+  empty_spaces_locations<-which(empty_spaces,TRUE) %>%
+    data.frame() %>%
+    unite(coordinates,row,col,sep=", ")
+  metadataQC[["3.01.Special_characters: All values are without empty spaces."]]<-"False"
+  print(paste0("Empty spaces in the following row-column coordinates: ",empty_spaces_locations,"."))
+}
+```
+
+```{r specialcharacters, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+
+special_characters <- sapply(metadata, function(column) str_detect(column, "[^[:alnum:]-._,]")) 
+
+if(sum(special_characters)==0){
+  metadataQC[["3.02.Special_characters: All values are without special characters"]]<-"Yes"
+} else {
+  empty_spaces_locations<-which(special_characters,TRUE) %>%
+    data.frame() %>%
+    unite(coordinates,row,col,sep=", ")
+  metadataQC[["3.02.Special_characters: All values are without special characters"]]<-"False"
+  print(paste0("Special characters in the following row-column coordinates: ",empty_spaces_locations,"."))
+}
+```
+
+
+```{r commas, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+
+commas <- sapply(metadata, function(column) str_detect(column, ",")) 
+
+if(sum(commas)==0){
+  metadataQC[["3.03.Special_characters: All values are without commas"]]<-"Yes"
+} else {
+  commas_locations<-which(commas,TRUE) %>%
+    data.frame() %>%
+    unite(coordinates,row,col,sep=", ")
+  metadataQC[["3.03.Special_characters: All values are without commas"]]<-"False"
+  print(paste0("Commas in the following row-column coordinates: ",commas_locations,"."))
+}
+```
+
+
+
+```{r wellidunique, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+if (nrow(unique(metadata[,c("Well_ID","Plate")])) == nrow(metadata)) {
+  metadataQC[["4.01.Uniqueness: All 'Well_ID' values are unique per plate."]]<-"Yes"
+} else {
+  metadataQC[["4.01.Uniqueness: All 'Well_ID' values are unique per plate."]]<-"False"
+}
+```
+
+
+```{r barcodeunique, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+if (nrow(unique(metadata[,c("Barcode","Plate")])) == nrow(metadata)) {
+  metadataQC[["4.02.Uniqueness: All 'Barcode' values are unique per plate."]]<-"Yes"
+} else {
+  metadataQC[["4.02.Uniqueness: All 'Barcode' values are unique per plate."]]<-"False"
+}
+```
+
+```{r treatmentreplicates, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+
+min_replicates<-metadata %>%
+  count(Treatment_Metadata,Time) %>%
+  filter(n==1) %>%
+  pull(Treatment_Metadata,Time)
+
+if (length(min_replicates)==0) {
+  metadataQC[["4.03.Uniqueness: All Treatment_Metadata have replicates."]]<-"Yes"
+} else {
+  metadataQC[["4.03.Uniqueness: All Treatment_Metadata have replicates."]]<-"False"
+}
+```
+
+
+```{r uniquecombinations, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+
+metadata<-metadata %>%
+  group_by(Time,Cell,Treatment_Metadata,Control) %>%
+  mutate(nReplicates=n())
+
+
+if (min(metadata$nReplicates>1)) {
+  metadataQC[["4.04.Uniqueness: All combinations of Time, Cell, Treatment and Control have replicates."]]<-"Yes"
+} else {
+  metadataQC[["4.04.Uniqueness: All combinations of Time, Cell, Treatment and Control have replicates."]]<-"No"
+}
+```
+
+
+
+```{r finalplot, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+
+#final plot
+plotReport(metadataQC)
+
+```
+
+## 2. Tables {.tabset}
+
+```{r metadata_table, results='asis', include=TRUE,echo=FALSE,message=FALSE}
+cat('### Metadata\n')
+metadata %>%
+datatable(extensions = 'Buttons',rownames = F,
+        options = list(dom = 'Blfrtip',pageLength = 10,
+                       buttons = c('copy', 'csv', 'excel'))) 
+```
+
+## 3. Sample summary {.tabset}
+
+### Sample summary
+
+```{r summary1, echo=FALSE,message=FALSE}
+#visualise samples in time
+
+metadata$nReplicates<-factor(metadata$nReplicates,levels=mixedsort(unique(metadata$nReplicates)))
+metadata %>% 
+  ungroup() %>%
+  select(-Id,-Col,-Row,-Well_ID,-Barcode) %>%
+  mutate_if(is.numeric,as.factor) %>%
+  mutate_if(is.character,as.factor) %>%
+  st(col.breaks=4)
+
+```
+\
+
