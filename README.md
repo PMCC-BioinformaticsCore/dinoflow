@@ -23,9 +23,7 @@
 1. Read Annotation File
 2. Run FASTQC
 3. Run Star-Solo
-4. Run Seurat
-5. Run Edge-R
-6. RUN MultiQC
+4. RUN MultiQC
 
 ## Usage
 
